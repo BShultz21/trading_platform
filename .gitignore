@@ -1,2 +1,4 @@
 .idea/
 .env
+ingestion/config
+ingestion/__pycache__/
