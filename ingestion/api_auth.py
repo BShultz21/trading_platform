@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from requests import HTTPError, post
@@ -18,7 +19,7 @@ class SchwabAPICredentials(object):
         self.authUrl = 'https://api.schwabapi.com/v1/oauth/authorize' + f'?client_id={self.appKey}&redirect_uri={self.callbackUrl}'
         self.tokenUrl = 'https://api.schwabapi.com/v1/oauth/token'
         self.authCode = None
-        self.tokens = {'Access': {'Token': None, 'Timestamp': None}, 'Refresh': {'Token': None, 'Timestamp': None}}
+        self.tokens: dict[str, dict[str, Optional[str]]] = {'Access': {'Token': None, 'Timestamp': None}, 'Refresh': {'Token': None, 'Timestamp': None}}
         self.json = dict()
         self.token_file = 'config/tokens/token.json'
 
@@ -58,11 +59,11 @@ class SchwabAPICredentials(object):
             with open(self.token_file) as f:
                 data = f.read()
                 if data == {} or data == '':
-                    self.tokens = None
+                    self.tokens = {'Access': {'Token': None, 'Timestamp': None}, 'Refresh': {'Token': None, 'Timestamp': None}}
                 else:
                     self.tokens = json.loads(data)
         except FileNotFoundError:
-            self.tokens = None
+            self.tokens = {'Access': {'Token': None, 'Timestamp': None}, 'Refresh': {'Token': None, 'Timestamp': None}}
             return None
 
     def check_for_valid_refresh_token(self) -> bool:
@@ -123,7 +124,7 @@ class SchwabAPICredentials(object):
     def get_json(self, auth_code) -> dict:
         """
         Takes authorization code, encoded credentials(client and secret key), and callback url to make post request
-        to return json from authentication server
+        to return .json from authentication server
         """
         data = {
             "grant_type": "authorization_code",
@@ -151,8 +152,7 @@ class SchwabAPICredentials(object):
         self.tokens['Access']['Timestamp'] = date_time
 
         self.tokens['Refresh']['Token'] = self.json['refresh_token']
-        date_time = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M")
-        self.tokens['Refresh']['Timestamp'] = date_time
+        self.tokens['Refresh']['Timestamp'] = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M")
 
 
     def use_refresh_token(self) -> None:
