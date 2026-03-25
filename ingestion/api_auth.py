@@ -15,12 +15,11 @@ class SchwabAPICredentials(object):
         self.appKey = None
         self.secretKey = None
         self.callbackUrl = None
-        self.encodedCredentials = ''
+        self.encodedCredentials = None
         self.authUrl = 'https://api.schwabapi.com/v1/oauth/authorize' + f'?client_id={self.appKey}&redirect_uri={self.callbackUrl}'
         self.tokenUrl = 'https://api.schwabapi.com/v1/oauth/token'
         self.authCode = None
         self.tokens: dict[str, dict[str, Optional[str]]] = {'Access': {'Token': None, 'Timestamp': None}, 'Refresh': {'Token': None, 'Timestamp': None}}
-        self.json = dict()
         self.token_file = 'config/tokens/token.json'
 
     def set_auth_url(self) -> None:
@@ -36,20 +35,10 @@ class SchwabAPICredentials(object):
         """
         Writes access and refresh token data to a .json file with the token information and timestamp
         """
-        try:
-            with open(self.token_file, 'r+') as f:
-                data = f.read()
-                if data == '' or data == {}:
-                    raise ValueError
-                f.seek(0)
-                f.write(json.dumps(self.tokens))
-                f.truncate()
-
-        except FileNotFoundError or ValueError:
-            with open(self.token_file, 'w') as f:
-                f.seek(0)
-                f.write(json.dumps(self.tokens))
-                f.truncate()
+        with open(self.token_file, 'w') as f:
+            f.seek(0)
+            f.write(json.dumps(self.tokens))
+            f.truncate()
 
     def load_token_data(self) -> None:
         """
@@ -68,7 +57,7 @@ class SchwabAPICredentials(object):
 
     def check_for_valid_refresh_token(self) -> bool:
         """
-        Takes token_data determines if the refresh token is valid
+        Determines if refresh token stored in self.tokens is greater than 7 days old
         """
         if self.tokens['Refresh']['Token'] and self.tokens['Refresh']['Timestamp']:
             current_time = datetime.now()
@@ -85,7 +74,7 @@ class SchwabAPICredentials(object):
 
     def check_for_valid_access_token(self) -> bool:
         """
-        Takes token_data and determines if the access token is greater than 30 minutes old
+        Determines if access token stored in self.tokens if greater than 30 minutes old
         """
         if self.tokens['Access']['Token'] and self.tokens['Access']['Timestamp']:
             current_time = datetime.now()
@@ -100,9 +89,9 @@ class SchwabAPICredentials(object):
         else:
             return False
 
-    def get_auth_code(self) -> str:
+    def get_auth_code(self) -> None:
         """
-        Takes the query returned from authentication server and parses it to return authentication code
+        Starts auth_server.py and takes the query returned from authentication server and sets self.authcode
         """
         print(self.authUrl)
         threading.Thread(target=auth_server.run_server, daemon=True).start()
@@ -111,47 +100,52 @@ class SchwabAPICredentials(object):
                 self.authCode = auth_server.codes[-1]
             time.sleep(3)
 
-        return self.authCode
 
-    def encode_credentials(self) -> str:
+    def encode_credentials(self) -> None:
         """
         Encodes the client key and secret key provided by api in base64 ascii
         """
         self.encodedCredentials = self.appKey + ':' + self.secretKey
         self.encodedCredentials = base64.b64encode(self.encodedCredentials.encode('ascii')).decode('ascii')
-        return self.encodedCredentials
 
-    def get_json(self, auth_code) -> dict:
+    def get_schwab_tokens(self) -> None:
         """
         Takes authorization code, encoded credentials(client and secret key), and callback url to make post request
-        to return .json from authentication server
+        to return tokens in .json format from authentication server
         """
+        if not self.encodedCredentials:
+            self.get_environment_variables()
+            self.encode_credentials()
+            self.set_auth_url()
+        self.get_auth_code()
+
         data = {
             "grant_type": "authorization_code",
-            "code": auth_code,
+            "code": self.authCode,
             "redirect_uri": self.callbackUrl
         }
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": f"Basic {self.encode_credentials()}"
+            "Authorization": f"Basic {self.encodedCredentials}"
         }
         response = post(self.tokenUrl, data=data, headers=headers)
         if response.status_code == 200:
-            self.json = response.json()
-            return self.json
+            data = response.json()
+            self.get_tokens(data)
+            self.write_token_data()
         else:
             print(f'Error reaching Schwab API, server response code: {response.status_code}')
             raise HTTPError
 
-    def get_tokens(self) -> None:
+    def get_tokens(self, data) -> None:
         """
         Parses a .json object to return access token
         """
-        self.tokens['Access']['Token'] = self.json['access_token']
+        self.tokens['Access']['Token'] = data['access_token']
         date_time = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M")
         self.tokens['Access']['Timestamp'] = date_time
 
-        self.tokens['Refresh']['Token'] = self.json['refresh_token']
+        self.tokens['Refresh']['Token'] = data['refresh_token']
         self.tokens['Refresh']['Timestamp'] = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M")
 
 
@@ -159,6 +153,10 @@ class SchwabAPICredentials(object):
         """
         Uses refresh token to return new access token
         """
+        if not self.encodedCredentials:
+            self.get_environment_variables()
+            self.encode_credentials()
+
         request_data = {
         "grant_type": "refresh_token",
         "refresh_token": self.tokens['Refresh']['Token'],
@@ -185,8 +183,6 @@ class SchwabAPICredentials(object):
         self.tokens['Access']['Timestamp'] = date_time
 
     def token_handler(self):
-        #Need to modify to make sure that access token never expires via automatic use of refresh token
-
         self.load_token_data()
         if self.check_for_valid_access_token():
             return True
@@ -195,16 +191,10 @@ class SchwabAPICredentials(object):
             self.write_token_data()
             return True
         else:
-            self.get_json(self.get_auth_code())
-            self.get_tokens()
-            self.write_token_data()
+            self.get_schwab_tokens()
             return True
 
 
 if __name__ == '__main__':
-    load_dotenv()
     Schwab = SchwabAPICredentials()
-    Schwab.get_environment_variables()
-    Schwab.set_auth_url()
-    Schwab.encode_credentials()
     Schwab.token_handler()
