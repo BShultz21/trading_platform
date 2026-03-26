@@ -3,12 +3,14 @@ from typing import Optional
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from requests import HTTPError, post
-import auth_server
+from auth import auth_server
 import threading
 import time
 import base64
 import json
+import os
 
+dir_path = os.path.dirname(os.path.abspath(__file__))
 
 class SchwabAPICredentials(object):
     def __init__(self) -> None:
@@ -20,7 +22,7 @@ class SchwabAPICredentials(object):
         self.tokenUrl = 'https://api.schwabapi.com/v1/oauth/token'
         self.authCode = None
         self.tokens: dict[str, dict[str, Optional[str]]] = {'Access': {'Token': None, 'Timestamp': None}, 'Refresh': {'Token': None, 'Timestamp': None}}
-        self.token_file = 'config/tokens/token.json'
+        self.token_file = dir_path + '/config/tokens/token.json'
 
     def set_auth_url(self) -> None:
         self.authUrl = 'https://api.schwabapi.com/v1/oauth/authorize' + f'?client_id={self.appKey}&redirect_uri={self.callbackUrl}'

@@ -1,4 +1,5 @@
 from flask import Flask, request
+import os
 
 """This script runs a flask server listening to the local host on port 8182 to receive callback url and return authentication code"""
 
@@ -13,7 +14,9 @@ def page() ->str:
     return ''
 
 
+dir_path = os.path.dirname(os.path.abspath(__file__))
+
 def run_server()-> None:
     """ Runs HTTPS server with self-signed certificate"""
-    app.run(ssl_context = ('config/certificates/cert.pem','config/keys/key.pem'), port=8182, debug= False)
+    app.run(ssl_context = (dir_path + '/config/certificates/cert.pem', dir_path + '/config/keys/key.pem'), port=8182, debug= False)
 
