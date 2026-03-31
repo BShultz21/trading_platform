@@ -185,6 +185,9 @@ class SchwabAPICredentials(object):
         self.tokens['Access']['Timestamp'] = date_time
 
     def token_handler(self):
+        """
+        Wrapper function that handles checking for valid tokens and refreshing tokens if necessary
+        """
         self.load_token_data()
         if self.check_for_valid_access_token():
             return True
@@ -195,7 +198,6 @@ class SchwabAPICredentials(object):
         else:
             self.get_schwab_tokens()
             return True
-
 
 if __name__ == '__main__':
     Schwab = SchwabAPICredentials()
