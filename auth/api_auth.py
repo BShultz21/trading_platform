@@ -196,6 +196,7 @@ class SchwabAPICredentials(object):
             self.write_token_data()
             return True
         else:
+            print("Refresh token is expired")
             self.get_schwab_tokens()
             return True
 
