@@ -1,6 +1,4 @@
 from fastparquet import ParquetFile, write
-from pandas.core.interchange import dataframe
-
 from auth import api_auth
 from requests import get
 import pandas as pd
@@ -10,6 +8,30 @@ import os
 class BatchHandler:
     def __init__(self):
         self.Schwab = api_auth.SchwabAPICredentials()
+        self.auth_header = None
+
+    def set_auth_header(self) -> None:
+        self.Schwab.token_handler()
+        access_token = self.Schwab.tokens['Access']['Token']
+        self.auth_header = {"Authorization": f"Bearer {access_token}"}
+
+    def call_api(self, url:str) -> str:
+        self.set_auth_header()
+        response = get(url, headers=self.auth_header)
+        if response.status_code == 200:
+            return response.text
+        else:
+            print(response.status_code)
+            return None
+
+    def create_pandas_dataframe(self, data:str, symbols, asset_type):
+        data_dict = {"timestamp": [str(dt.date.today()).encode("UTF-8")],
+                "symbols": [symbols.encode("UTF-8")],
+                "asset_type": [asset_type.encode("UTF-8")],
+                "raw_json": [data.encode("UTF-8")]}
+
+        df = pd.DataFrame(data=data_dict)
+        return df
 
     def write_parquet_file(self, dataframe, data_pull:str) -> None:
         """
@@ -17,12 +39,12 @@ class BatchHandler:
         a parquet file
         """
 
-        if data_pull == 'historical_equity':
+        if data_pull in ['historical_equity', 'equity']:
             asset_type = 'equity'
         elif data_pull == 'options':
             asset_type  = 'options'
         else:
-            return None
+            raise ValueError
 
         project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         dir = project_dir + f"/storage/bronze/asset_type={asset_type}/{dt.date.today()}"
@@ -34,74 +56,43 @@ class BatchHandler:
             os.makedirs(dir)
         if os.path.isfile(file_path):
             write(file_path, dataframe, append=True)
+            print("Data has been appended")
             return None
         else:
             write(file_path, dataframe)
+            print("File has been created")
             return None
 
-    def historical_equities(self, symbol: str) -> None:
+    def get_historical_equities_data(self, symbol: str) -> None:
         """
         This data takes equity symbol and returns data from previous year until current day
         :return:
         """
-        self.Schwab.token_handler()
-        access_token = self.Schwab.tokens['Access']['Token']
-        auth_header = {"Authorization": f"Bearer {access_token}"}
-
         url = f'https://api.schwabapi.com/marketdata/v1/pricehistory?symbol={symbol}&periodType=year&period=1&frequencyType=daily&frequency=1'
-        response = get(url, headers=auth_header)
-        if response.status_code == 200:
-            data = {"timestamp": [str(dt.date.today()).encode("UTF-8")],
-                    "symbol": [symbol.encode("UTF-8")],
-                    "asset_type": ["equities".encode("UTF-8")],
-                    "raw_json": [response.text.encode("UTF-8")]}
-            df = pd.DataFrame(data=data)
+        response = self.call_api(url)
+        df = self.create_pandas_dataframe(response, symbol, "equity")
+        self.write_parquet_file(df, "historical_equity")
 
-            self.write_parquet_file(df, 'historical_equity')
-        else:
-            print(response.status_code)
+    def get_equities_data(self, symbols) -> None:
 
-    def get_equities(self) -> None:
-        self.Schwab.token_handler()
-        access_token = self.Schwab.tokens['Access']['Token']
-        auth_header = {"Authorization": f"Bearer {access_token}"}
+        symbols = '%2C'.join(symbols)
+        url = f'https://api.schwabapi.com/marketdata/v1/quotes?symbols={symbols}&indicative=false'
+        response = self.call_api(url)
+        df = self.create_pandas_dataframe(response, symbols, "equity")
+        self.write_parquet_file(df, "equity")
 
-        #Need to implement list of stock symbols. This is in progress
-        url = f'https://api.schwabapi.com/marketdata/v1/quotes?symbols=AAPL%2CMSFT%2CTSLA&indicative=false'
-        response = get(url, headers=auth_header)
-        if response.status_code == 200:
-            data = {"timestamp": [str(dt.date.today()).encode("UTF-8")],
-                    "symbol": [symbol.encode("UTF-8")],
-                    "asset_type": ["options".encode("UTF-8")],
-                    "raw_json": [response.text.encode("UTF-8")]}
-            df = pd.DataFrame(data=data)
-
-            self.write_parquet_file(df, 'equity')
-        else:
-            print(response.status_code)
-
-    def get_option_chains(self, symbol:str) -> None:
+    def get_option_chains_data(self, symbol:str) -> None:
         """
         This takes the stock symbol and returns currently available option contracts
         :return:
         """
-        self.Schwab.token_handler()
-        access_token = self.Schwab.tokens['Access']['Token']
-        auth_header = {"Authorization": f"Bearer {access_token}"}
-
         url = f'https://api.schwabapi.com/marketdata/v1/chains?symbol={symbol}&contractType=ALL'
-        response = get(url, headers=auth_header)
-        if response.status_code == 200:
-            data = {"timestamp": [str(dt.date.today()).encode("UTF-8")],
-                    "symbol": [symbol.encode("UTF-8")],
-                    "asset_type": ["options".encode("UTF-8")],
-                    "raw_json": [response.text.encode("UTF-8")]}
-            df = pd.DataFrame(data=data)
-
-            self.write_parquet_file(df, 'options')
-        else:
-            print(response.status_code)
+        response = self.call_api(url)
+        df = self.create_pandas_dataframe(response, symbol, "options")
+        self.write_parquet_file(df, "options")
 
 if __name__ == '__main__':
     batch_handler = BatchHandler()
-    batch_handler.get_equities('aapl')
+    batch_handler.get_option_chains_data('AAPL')
+    batch_handler.get_equities_data('AAPL')
+    batch_handler.get_historical_equities_data('AAPL')
