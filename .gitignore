@@ -3,4 +3,5 @@
 auth/config
 ingestion/__pycache__/
 auth/__pycache__/
-storage/
+storage/bronze
+storage/parquet/__pycache__/

@@ -1,9 +1,8 @@
-from fastparquet import ParquetFile, write
 from auth import api_auth
 from requests import get
 import pandas as pd
 import datetime as dt
-import os
+from storage.parquet import parquet
 
 class BatchHandler:
     def __init__(self):
@@ -33,36 +32,6 @@ class BatchHandler:
         df = pd.DataFrame(data=data_dict)
         return df
 
-    def write_parquet_file(self, dataframe, data_pull:str) -> None:
-        """
-        Takes pandas dataframe and type of data that it is writing (historical equities/options/etc.) and writes
-        a parquet file
-        """
-
-        if data_pull in ['historical_equity', 'equity']:
-            asset_type = 'equity'
-        elif data_pull == 'options':
-            asset_type  = 'options'
-        else:
-            raise ValueError
-
-        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        dir = project_dir + f"/storage/bronze/asset_type={asset_type}/{dt.date.today()}"
-        file_name = f"{data_pull}_{dt.date.today()}"
-        file_path = os.path.join(project_dir, dir, file_name)
-        file_path = os.path.abspath(file_path)
-
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        if os.path.isfile(file_path):
-            write(file_path, dataframe, append=True)
-            print("Data has been appended")
-            return None
-        else:
-            write(file_path, dataframe)
-            print("File has been created")
-            return None
-
     def get_historical_equities_data(self, symbol: str) -> None:
         """
         This data takes equity symbol and returns data from previous year until current day
@@ -71,7 +40,7 @@ class BatchHandler:
         url = f'https://api.schwabapi.com/marketdata/v1/pricehistory?symbol={symbol}&periodType=year&period=1&frequencyType=daily&frequency=1'
         response = self.call_api(url)
         df = self.create_pandas_dataframe(response, symbol, "equity")
-        self.write_parquet_file(df, "historical_equity")
+        parquet.write_parquet_file(df, "bronze", "historical_equity")
 
     def get_equities_data(self, symbols) -> None:
 
@@ -79,7 +48,7 @@ class BatchHandler:
         url = f'https://api.schwabapi.com/marketdata/v1/quotes?symbols={symbols}&indicative=false'
         response = self.call_api(url)
         df = self.create_pandas_dataframe(response, symbols, "equity")
-        self.write_parquet_file(df, "equity")
+        parquet.write_parquet_file(df, "bronze", "equity")
 
     def get_option_chains_data(self, symbol:str) -> None:
         """
@@ -89,10 +58,10 @@ class BatchHandler:
         url = f'https://api.schwabapi.com/marketdata/v1/chains?symbol={symbol}&contractType=ALL'
         response = self.call_api(url)
         df = self.create_pandas_dataframe(response, symbol, "options")
-        self.write_parquet_file(df, "options")
+        parquet.write_parquet_file(df,"bronze", "options")
 
 if __name__ == '__main__':
     batch_handler = BatchHandler()
-    batch_handler.get_option_chains_data('AAPL')
-    batch_handler.get_equities_data('AAPL')
     batch_handler.get_historical_equities_data('AAPL')
+    batch_handler.get_equities_data('AAPL')
+    batch_handler.get_equities_data('AAPL')
