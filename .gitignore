@@ -5,3 +5,5 @@ ingestion/__pycache__/
 auth/__pycache__/
 storage/bronze
 storage/parquet/__pycache__/
+processing/dataframes/__pycache__/
+processing/parser/__pycache__/
