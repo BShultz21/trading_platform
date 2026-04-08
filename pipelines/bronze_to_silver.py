@@ -16,5 +16,5 @@ if __name__ == '__main__':
     pd.set_option('display.max_colwidth', None)
     pd.set_option('display.width', None)
     pd.set_option('display.max_rows', None)
-    df = parquet.load_parquet_file('bronze', 'historical_equity')
-    parser.clean_historical_equity_data(df)
+    df = parquet.load_parquet_file('bronze', 'options')
+    parser.clean_option_data(df)

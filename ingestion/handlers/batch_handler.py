@@ -1,7 +1,5 @@
 from auth import api_auth
 from requests import get
-import pandas as pd
-import datetime as dt
 from storage.parquet import parquet
 from processing.dataframes import dataframes
 
@@ -51,6 +49,7 @@ class BatchHandler:
         response = self.call_api(url)
         df = dataframes.create_pandas_dataframe(response, symbol, "options")
         parquet.write_parquet_file(df,"bronze", "options")
+
 
 if __name__ == '__main__':
     batch_handler = BatchHandler()
