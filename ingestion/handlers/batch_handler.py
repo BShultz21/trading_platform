@@ -17,6 +17,7 @@ class BatchHandler:
         self.set_auth_header()
         response = get(url, headers=self.auth_header)
         if response.status_code == 200:
+            print(response.text)
             return response.text
         else:
             print(response.status_code)
@@ -35,7 +36,7 @@ class BatchHandler:
     def get_equities_data(self, symbols) -> None:
 
         symbols = '%2C'.join(symbols)
-        url = f'https://api.schwabapi.com/marketdata/v1/quotes?symbols={symbols}&indicative=false'
+        url = f'https://api.schwabapi.com/marketdata/v1/quotes?symbols={symbols}&fields=quote&indicative=false'
         response = self.call_api(url)
         df = dataframes.create_pandas_dataframe(response, symbols, "equity")
         parquet.write_parquet_file(df, "bronze", "equity")
@@ -54,5 +55,5 @@ class BatchHandler:
 if __name__ == '__main__':
     batch_handler = BatchHandler()
     batch_handler.get_historical_equities_data('AAPL')
-    batch_handler.get_equities_data('AAPL')
-    batch_handler.get_option_chains_data('AAPL')
+    batch_handler.get_equities_data(['AAPL'])
+    #batch_handler.get_option_chains_data('AAPL')

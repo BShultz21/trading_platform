@@ -1,20 +1,21 @@
-import pandas as pd
-import os
-import datetime as dt
 from storage.parquet import parquet
 from processing.parser import parser
 
-class BronzeLayerETL:
-    def __init__(self):
-        pass
 
-    def parse_dataframe(self):
-        df = self.load_parquet_to_dataframe()
-        print(df['raw_json'])
+def parse_bronze_dataframe(data_pull):
+    dataframe = parquet.load_parquet_file('bronze', data_pull)
+
+    if data_pull in ['historical_equity', 'equity']:
+        return parser.clean_equity_data(df)
+    elif data_pull == 'options':
+        return parser.clean_option_data(dataframe)
+    else:
+        print("Invalid data pull")
+        raise ValueError
+
+def load_to_silver_layer(dataframe, data_pull):
+    parquet.write_parquet_file(dataframe, 'silver', data_pull)
 
 if __name__ == '__main__':
-    pd.set_option('display.max_colwidth', None)
-    pd.set_option('display.width', None)
-    pd.set_option('display.max_rows', None)
-    df = parquet.load_parquet_file('bronze', 'options')
-    parser.clean_option_data(df)
+    df = parse_bronze_dataframe('equity')
+    load_to_silver_layer(df, 'equity')

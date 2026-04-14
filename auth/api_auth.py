@@ -1,7 +1,6 @@
-import os
 from typing import Optional
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from requests import HTTPError, post
 from auth import auth_server
 import threading
@@ -9,8 +8,10 @@ import time
 import base64
 import json
 import os
+from pathlib import Path
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
+
 
 class SchwabAPICredentials(object):
     def __init__(self) -> None:
@@ -28,10 +29,13 @@ class SchwabAPICredentials(object):
         self.authUrl = 'https://api.schwabapi.com/v1/oauth/authorize' + f'?client_id={self.appKey}&redirect_uri={self.callbackUrl}'
 
     def get_environment_variables(self):
-        load_dotenv()
-        self.appKey = os.getenv('APP_KEY')
-        self.secretKey = os.getenv('SECRET_KEY')
-        self.callbackUrl = os.getenv('callback_url')
+        if load_dotenv():
+            self.appKey = os.getenv('APP_KEY')
+            self.secretKey = os.getenv('SECRET_KEY')
+            self.callbackUrl = os.getenv('callback_url')
+        else:
+            print("failed to load .env file")
+            raise FileNotFoundError
 
     def write_token_data(self) -> None:
         """

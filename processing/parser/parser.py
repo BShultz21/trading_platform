@@ -2,14 +2,15 @@ import pandas as pd
 import json
 import datetime as dt
 
-def clean_equity_data(dataframe):
+def clean_historical_equity_data(dataframe):
     symbol = dataframe['symbols'][0].decode('utf-8')
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
+    print(data)
 
     columns = ['timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume']
-    #data_types = {'Timestamp': datetime64['s'], 'Asset_Type': str, 'Symbol': str, 'Open': float64, 'High': float64, 'Low': float64,
-    #            'Close': float64, 'Volume': uint64}
+    #data_types = {'Timestamp': datetime64[s], 'Asset_Type': str, 'Symbol': str, 'Open': float64, 'High': float64, 'Low': float64,
+    #           'Close': float64, 'Volume': uint64}
     cleaned_dataframe = pd.DataFrame(columns=columns)
     #cleaned_dataframe = cleaned_dataframe.astype(data_types)
     for i in range(len(data['candles'])):
@@ -22,7 +23,10 @@ def clean_equity_data(dataframe):
         cleaned_dataframe.loc[i, 'close'] = data['candles'][i]['close']
         cleaned_dataframe.loc[i, 'volume'] = data['candles'][i]['volume']
 
-    print(cleaned_dataframe)
+    return cleaned_dataframe
+
+def clean_equity_data(dataframe):
+    pass
 
 def clean_option_data(dataframe):
     symbol = dataframe['symbols'][0].decode('utf-8')
@@ -41,7 +45,7 @@ def clean_option_data(dataframe):
     for i in range(len(available_options)):
         date = available_options[i][0]
         strike_price = available_options[i][1]
-        cleaned_dataframe.loc[i, 'timestamp'] = today_timestamp
+        cleaned_dataframe.loc[i, 'timestamp'] = pd.to_datetime(today_timestamp, unit= 'ms')
         cleaned_dataframe.loc[i, 'asset_type'] = 'options'
         cleaned_dataframe.loc[i, 'symbol'] = symbol
         cleaned_dataframe.loc[i, 'expiration_date'] = data['callExpDateMap'][date][strike_price][0]['expirationDate']
@@ -62,4 +66,4 @@ def clean_option_data(dataframe):
         cleaned_dataframe.loc[i, 'vega'] = data['callExpDateMap'][date][strike_price][0]['vega']
         cleaned_dataframe.loc[i, 'rho'] = data['callExpDateMap'][date][strike_price][0]['rho']
 
-    print(cleaned_dataframe)
+    return cleaned_dataframe

@@ -21,7 +21,7 @@ def write_parquet_file(dataframe, medallion_level, data_pull: str) -> None:
     file_name = f"{data_pull}_{dt.date.today()}"
 
     if not Path.exists(file_dir):
-        Path.mkdir(file_dir)
+        Path.mkdir(file_dir, parents=True)
     if Path.exists(file_dir/file_name):
         write(file_dir/file_name, dataframe, append=True)
         print("Data has been appended")
