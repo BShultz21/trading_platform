@@ -1,4 +1,4 @@
-import pathlib
+import pandas as pd
 from fastparquet import ParquetFile, write
 from pathlib import Path
 import datetime as dt
@@ -10,26 +10,31 @@ def write_parquet_file(dataframe, medallion_level, data_pull: str) -> None:
     a parquet file
     """
 
-    if data_pull in ['historical_equity', 'equity']:
-        asset_type = 'equity'
-    elif data_pull == 'options':
-        asset_type = 'options'
-    else:
-        raise ValueError
+    if medallion_level == 'bronze':
+        dataframe['asset_type'] = dataframe['asset_type'].apply(
+            lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
+        )
 
-    file_dir = Path(__file__).resolve().parent.parent / f"{medallion_level}/asset_type={asset_type}/{dt.date.today()}"
-    file_name = f"{data_pull}_{dt.date.today()}"
-
-    if not Path.exists(file_dir):
-        Path.mkdir(file_dir, parents=True)
-    if Path.exists(file_dir/file_name):
-        write(file_dir/file_name, dataframe, append=True)
-        print("Data has been appended")
-        return None
+        dataframe['date'] = dataframe['date'].apply(
+            lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
+        )
     else:
-        write(file_dir/file_name, dataframe)
-        print("File has been created")
-        return None
+        dataframe['asset_type'] = dataframe['asset_type'].apply(
+            lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
+        )
+
+        dataframe['timestamp'] = dataframe['timestamp'].apply(
+            lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
+        )
+
+    write(
+        str(Path(__file__).resolve().parent.parent / medallion_level),
+        dataframe,
+        file_scheme='hive',
+        partition_on=['asset_type', 'date'],
+        write_index=False,
+        append=True
+    )
 
 def load_parquet_file(medallion_level, data_pull):
     if data_pull in ['historical_equity', 'equity']:
@@ -39,9 +44,9 @@ def load_parquet_file(medallion_level, data_pull):
     else:
         raise ValueError
 
-    file_dir = Path(__file__).resolve().parent.parent / f"{medallion_level}/asset_type={asset_type}/{dt.date.today()}"
-    file_name = f"{data_pull}_{dt.date.today()}"
-    pf = ParquetFile(f"{file_dir}/{file_name}")
+    file_dir = Path(__file__).resolve().parent.parent / f"{medallion_level}/asset_type={asset_type}/date={dt.date.today()}"
+    #file_name = f"{data_pull}_{dt.date.today()}"
+    pf = ParquetFile(file_dir/'part.0.parquet')
     return pf.to_pandas()
 
 

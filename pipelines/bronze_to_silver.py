@@ -6,7 +6,7 @@ def parse_bronze_dataframe(data_pull):
     dataframe = parquet.load_parquet_file('bronze', data_pull)
 
     if data_pull in ['historical_equity', 'equity']:
-        return parser.clean_equity_data(df)
+        return parser.clean_equity_data(dataframe)
     elif data_pull == 'options':
         return parser.clean_option_data(dataframe)
     else:

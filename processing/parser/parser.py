@@ -1,12 +1,13 @@
 import pandas as pd
 import json
 import datetime as dt
+from numpy import datetime64
+
 
 def clean_historical_equity_data(dataframe):
     symbol = dataframe['symbols'][0].decode('utf-8')
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
-    print(data)
 
     columns = ['timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume']
     #data_types = {'Timestamp': datetime64[s], 'Asset_Type': str, 'Symbol': str, 'Open': float64, 'High': float64, 'Low': float64,
@@ -15,7 +16,7 @@ def clean_historical_equity_data(dataframe):
     #cleaned_dataframe = cleaned_dataframe.astype(data_types)
     for i in range(len(data['candles'])):
         cleaned_dataframe.loc[i, 'timestamp'] = pd.to_datetime(data['candles'][i]['datetime'], unit= 'ms')
-        cleaned_dataframe.loc[i, 'asset_type'] = 'Equity'
+        cleaned_dataframe.loc[i, 'asset_type'] = 'historical_equity'
         cleaned_dataframe.loc[i, 'symbol'] = symbol
         cleaned_dataframe.loc[i, 'open'] = data['candles'][i]['open']
         cleaned_dataframe.loc[i, 'high'] = data['candles'][i]['high']
@@ -26,7 +27,30 @@ def clean_historical_equity_data(dataframe):
     return cleaned_dataframe
 
 def clean_equity_data(dataframe):
-    pass
+    symbols = dataframe['symbols'][0].decode('utf-8')
+    symbols = symbols.split('%2C')
+    json_str = dataframe['raw_json'][0].decode('utf-8')
+    data = json.loads(json_str)
+
+    columns = ['timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'bid', 'ask', 'mark']
+
+    cleaned_dataframe = pd.DataFrame(columns=columns)
+
+    for symbol in symbols:
+        cleaned_dataframe.loc[symbol, 'timestamp'] = data[symbol]['quote']['quoteTime']
+        cleaned_dataframe.loc[symbol, 'asset_type'] = 'historical_equity'
+        cleaned_dataframe.loc[symbol, 'symbol'] = symbol
+        cleaned_dataframe.loc[symbol, 'open'] = data[symbol]['quote']['openPrice']
+        cleaned_dataframe.loc[symbol, 'high'] = data[symbol]['quote']['highPrice']
+        cleaned_dataframe.loc[symbol, 'low'] = data[symbol]['quote']['lowPrice']
+        cleaned_dataframe.loc[symbol, 'close'] = data[symbol]['quote']['closePrice']
+        cleaned_dataframe.loc[symbol, 'volume'] = data[symbol]['quote']['totalVolume']
+        cleaned_dataframe.loc[symbol, 'bid'] = data[symbol]['quote']['bidPrice']
+        cleaned_dataframe.loc[symbol, 'ask'] = data[symbol]['quote']['askPrice']
+        cleaned_dataframe.loc[symbol, 'mark'] = data[symbol]['quote']['mark']
+
+    cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
+    return cleaned_dataframe
 
 def clean_option_data(dataframe):
     symbol = dataframe['symbols'][0].decode('utf-8')
