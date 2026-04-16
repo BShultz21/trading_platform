@@ -4,12 +4,16 @@ from pathlib import Path
 import datetime as dt
 
 
-def write_parquet_file(dataframe, medallion_level, data_pull: str) -> None:
+def write_parquet_file(dataframe, medallion_level) -> None:
     """
     Takes pandas dataframe and type of data that it is writing (historical equities/options/etc.) and writes
     a parquet file
     """
 
+    output_path = Path(__file__).resolve().parent.parent / medallion_level
+    output_path.mkdir(parents=True, exist_ok=True)
+    has_parquet = any(p.is_file() for p in output_path.rglob("*.parquet"))
+    
     if medallion_level == 'bronze':
         dataframe['asset_type'] = dataframe['asset_type'].apply(
             lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
@@ -18,6 +22,23 @@ def write_parquet_file(dataframe, medallion_level, data_pull: str) -> None:
         dataframe['date'] = dataframe['date'].apply(
             lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
         )
+        if has_parquet:
+            write(
+                str(output_path),
+                dataframe,
+                file_scheme='hive',
+                partition_on=['asset_type', 'date'],
+                write_index=False,
+                append=True
+            )
+        else:
+            write(
+                str(output_path),
+                dataframe,
+                file_scheme='hive',
+                partition_on=['asset_type', 'date'],
+                write_index=False
+            )
     else:
         dataframe['asset_type'] = dataframe['asset_type'].apply(
             lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
@@ -27,14 +48,24 @@ def write_parquet_file(dataframe, medallion_level, data_pull: str) -> None:
             lambda x: x.decode('utf-8') if isinstance(x, bytes) else x
         )
 
-    write(
-        str(Path(__file__).resolve().parent.parent / medallion_level),
-        dataframe,
-        file_scheme='hive',
-        partition_on=['asset_type', 'date'],
-        write_index=False,
-        append=True
-    )
+        if has_parquet:
+            write(
+                str(output_path),
+                dataframe,
+                file_scheme='hive',
+                partition_on=['asset_type', 'date'],
+                write_index=False,
+                append=True
+            )
+        else:
+            write(
+                str(output_path),
+                dataframe,
+                file_scheme='hive',
+                partition_on=['asset_type', 'date'],
+                write_index=False
+            )
+
 
 def load_parquet_file(medallion_level, data_pull):
     if data_pull in ['historical_equity', 'equity']:
