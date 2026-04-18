@@ -9,13 +9,14 @@ def clean_historical_equity_data(dataframe):
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
 
-    columns = ['timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume']
+    columns = ['date','timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume']
     #data_types = {'Timestamp': datetime64[s], 'Asset_Type': str, 'Symbol': str, 'Open': float64, 'High': float64, 'Low': float64,
     #           'Close': float64, 'Volume': uint64}
     cleaned_dataframe = pd.DataFrame(columns=columns)
     #cleaned_dataframe = cleaned_dataframe.astype(data_types)
     for i in range(len(data['candles'])):
-        cleaned_dataframe.loc[i, 'timestamp'] = pd.to_datetime(data['candles'][i]['datetime'], unit= 'ms')
+        cleaned_dataframe.loc[i, 'date'] = dt.date.today()
+        cleaned_dataframe.loc[i, 'timestamp'] = data['candles'][i]['datetime']
         cleaned_dataframe.loc[i, 'asset_type'] = 'historical_equity'
         cleaned_dataframe.loc[i, 'symbol'] = symbol
         cleaned_dataframe.loc[i, 'open'] = data['candles'][i]['open']
@@ -24,6 +25,7 @@ def clean_historical_equity_data(dataframe):
         cleaned_dataframe.loc[i, 'close'] = data['candles'][i]['close']
         cleaned_dataframe.loc[i, 'volume'] = data['candles'][i]['volume']
 
+    cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
     return cleaned_dataframe
 
 def clean_equity_data(dataframe):
@@ -32,13 +34,13 @@ def clean_equity_data(dataframe):
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
 
-    columns = ['timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'bid', 'ask', 'mark']
+    columns = ['date','timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'bid', 'ask', 'mark']
 
     cleaned_dataframe = pd.DataFrame(columns=columns)
-
     for symbol in symbols:
+        cleaned_dataframe.loc[symbol, 'date'] = dt.date.today()
         cleaned_dataframe.loc[symbol, 'timestamp'] = data[symbol]['quote']['quoteTime']
-        cleaned_dataframe.loc[symbol, 'asset_type'] = 'historical_equity'
+        cleaned_dataframe.loc[symbol, 'asset_type'] = 'equity'
         cleaned_dataframe.loc[symbol, 'symbol'] = symbol
         cleaned_dataframe.loc[symbol, 'open'] = data[symbol]['quote']['openPrice']
         cleaned_dataframe.loc[symbol, 'high'] = data[symbol]['quote']['highPrice']
@@ -61,7 +63,7 @@ def clean_option_data(dataframe):
     for date in data['callExpDateMap'].keys():
         for strike_price in data['callExpDateMap'][date].keys():
             available_options.append((date,strike_price))
-    columns = ['timestamp', 'asset_type', 'symbol', 'expiration_date', 'option_type', 'strike_price', 'bid', 'ask',
+    columns = ['date','timestamp', 'asset_type', 'symbol', 'expiration_date', 'option_type', 'strike_price', 'bid', 'ask',
                 'bid_size', 'ask_size', 'mark_price', 'last_price', 'volume', 'volatility', 'open_interest', 'delta',
                'gamma', 'theta', 'vega', 'rho']
     today_timestamp = dt.datetime.now()
@@ -69,7 +71,8 @@ def clean_option_data(dataframe):
     for i in range(len(available_options)):
         date = available_options[i][0]
         strike_price = available_options[i][1]
-        cleaned_dataframe.loc[i, 'timestamp'] = pd.to_datetime(today_timestamp, unit= 'ms')
+        cleaned_dataframe.loc[i, 'date'] = dt.date.today()
+        cleaned_dataframe.loc[i, 'timestamp'] = today_timestamp
         cleaned_dataframe.loc[i, 'asset_type'] = 'options'
         cleaned_dataframe.loc[i, 'symbol'] = symbol
         cleaned_dataframe.loc[i, 'expiration_date'] = data['callExpDateMap'][date][strike_price][0]['expirationDate']
@@ -89,5 +92,7 @@ def clean_option_data(dataframe):
         cleaned_dataframe.loc[i, 'theta'] = data['callExpDateMap'][date][strike_price][0]['theta']
         cleaned_dataframe.loc[i, 'vega'] = data['callExpDateMap'][date][strike_price][0]['vega']
         cleaned_dataframe.loc[i, 'rho'] = data['callExpDateMap'][date][strike_price][0]['rho']
+
+    cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
 
     return cleaned_dataframe

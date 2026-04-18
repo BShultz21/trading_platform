@@ -174,8 +174,6 @@ class SchwabAPICredentials(object):
             "Authorization": f"Basic {self.encodedCredentials}"
         }
 
-        print(headers)
-
         response = post(self.tokenUrl, data = request_data, headers = headers)
 
         try:
