@@ -46,6 +46,7 @@ class BatchHandler:
         """
         url = f'https://api.schwabapi.com/marketdata/v1/chains?symbol={symbol}&contractType=ALL'
         response = self.call_api(url)
+        print(response)
         df = dataframes.create_pandas_dataframe(response, symbol, "options")
         parquet.write_parquet_file(df,"bronze")
 

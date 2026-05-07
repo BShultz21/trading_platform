@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 import datetime as dt
-from numpy import datetime64
+from numpy import datetime64, float64, uint64
 
 
 def clean_historical_equity_data(dataframe):
@@ -10,10 +10,9 @@ def clean_historical_equity_data(dataframe):
     data = json.loads(json_str)
 
     columns = ['date','timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume']
-    #data_types = {'Timestamp': datetime64[s], 'Asset_Type': str, 'Symbol': str, 'Open': float64, 'High': float64, 'Low': float64,
-    #           'Close': float64, 'Volume': uint64}
+    data_types = {'timestamp': 'datetime64[s]', 'asset_type': object, 'symbol': object, 'open': float64, 'high': float64, 'low': float64,
+               'close': float64, 'volume': uint64}
     cleaned_dataframe = pd.DataFrame(columns=columns)
-    #cleaned_dataframe = cleaned_dataframe.astype(data_types)
     for i in range(len(data['candles'])):
         cleaned_dataframe.loc[i, 'date'] = dt.date.today()
         cleaned_dataframe.loc[i, 'timestamp'] = data['candles'][i]['datetime']
@@ -26,6 +25,7 @@ def clean_historical_equity_data(dataframe):
         cleaned_dataframe.loc[i, 'volume'] = data['candles'][i]['volume']
 
     cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
+    cleaned_dataframe = cleaned_dataframe.astype(data_types)
     return cleaned_dataframe
 
 def clean_equity_data(dataframe):
@@ -35,6 +35,8 @@ def clean_equity_data(dataframe):
     data = json.loads(json_str)
 
     columns = ['date','timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'bid', 'ask', 'mark']
+    data_types = {'timestamp': 'datetime64[s]', 'asset_type': object, 'symbol': object, 'open': float64, 'high': float64,
+                  'close': float64, 'volume': uint64, 'bid': float64, 'ask': float64, 'mark': float64}
 
     cleaned_dataframe = pd.DataFrame(columns=columns)
     for symbol in symbols:
@@ -52,6 +54,7 @@ def clean_equity_data(dataframe):
         cleaned_dataframe.loc[symbol, 'mark'] = data[symbol]['quote']['mark']
 
     cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
+    cleaned_dataframe = cleaned_dataframe.astype(data_types)
     return cleaned_dataframe
 
 def clean_option_data(dataframe):
@@ -66,6 +69,10 @@ def clean_option_data(dataframe):
     columns = ['date','timestamp', 'asset_type', 'symbol', 'expiration_date', 'option_type', 'strike_price', 'bid', 'ask',
                 'bid_size', 'ask_size', 'mark_price', 'last_price', 'volume', 'volatility', 'open_interest', 'delta',
                'gamma', 'theta', 'vega', 'rho']
+    data_types = {'timestamp': 'datetime64[s]', 'asset_type': object, 'symbol': object, 'expiration_date': 'datetime64[ns]',
+                  'option_type': object, 'strike_price': float64, 'bid': float64, 'ask': float64, 'bid_size': uint64,
+                  'ask_size': uint64, 'mark_price': float64, 'last_price': float64, 'volume': uint64, 'volatility': float64,
+                  'open_interest': uint64, 'delta': float64, 'gamma': float64, 'theta': float64, 'vega': float64, 'rho': float64}
     today_timestamp = dt.datetime.now()
     cleaned_dataframe = pd.DataFrame(columns=columns)
     for i in range(len(available_options)):
@@ -94,5 +101,8 @@ def clean_option_data(dataframe):
         cleaned_dataframe.loc[i, 'rho'] = data['callExpDateMap'][date][strike_price][0]['rho']
 
     cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
+    cleaned_dataframe['expiration_date'] = pd.to_datetime(cleaned_dataframe['expiration_date'],utc=True)
+    cleaned_dataframe['expiration_date'] = pd.to_datetime(cleaned_dataframe['expiration_date'].dt.tz_localize(None))
+    cleaned_dataframe = cleaned_dataframe.astype(data_types)
 
     return cleaned_dataframe
