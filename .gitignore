@@ -8,3 +8,6 @@ storage/silver
 storage/parquet/__pycache__/
 processing/dataframes/__pycache__/
 processing/parser/__pycache__/
+docker/
+ingestion/handlers/__pycache__/
+pipelines/__pycache__/

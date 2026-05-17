@@ -68,5 +68,3 @@ def load_parquet_file(medallion_level, asset_type):
     pf = ParquetFile(str(file_dir)+'/'+str(os.listdir(file_dir)[-1]))
     return pf.to_pandas()
 
-if __name__ == '__main__':
-    print(load_parquet_file('bronze', 'equity'))

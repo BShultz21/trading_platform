@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 import datetime as dt
-from numpy import datetime64, float64, uint64
+from numpy import datetime64, float64, uint64, int64
 
 
 def clean_historical_equity_data(dataframe):
@@ -9,9 +9,10 @@ def clean_historical_equity_data(dataframe):
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
 
+    #Must keep all timestamps in milliseconds due to issue with fastparquet and pandas
     columns = ['date','timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume']
-    data_types = {'timestamp': 'datetime64[s]', 'asset_type': object, 'symbol': object, 'open': float64, 'high': float64, 'low': float64,
-               'close': float64, 'volume': uint64}
+    data_types = {'timestamp': 'datetime64[ms]', 'asset_type': object, 'symbol': object, 'open': float64, 'high': float64, 'low': float64,
+               'close': float64, 'volume': int64}
     cleaned_dataframe = pd.DataFrame(columns=columns)
     for i in range(len(data['candles'])):
         cleaned_dataframe.loc[i, 'date'] = dt.date.today()
@@ -34,9 +35,10 @@ def clean_equity_data(dataframe):
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
 
+    #Must keep all timestamps in milliseconds due to issue with fastparquet and pandas
     columns = ['date','timestamp', 'asset_type', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'bid', 'ask', 'mark']
-    data_types = {'timestamp': 'datetime64[s]', 'asset_type': object, 'symbol': object, 'open': float64, 'high': float64,
-                  'close': float64, 'volume': uint64, 'bid': float64, 'ask': float64, 'mark': float64}
+    data_types = {'timestamp': 'datetime64[ms]', 'asset_type': object, 'symbol': object, 'open': float64, 'high': float64,
+                  'close': float64, 'volume': int64, 'bid': float64, 'ask': float64, 'mark': float64}
 
     cleaned_dataframe = pd.DataFrame(columns=columns)
     for symbol in symbols:
@@ -66,13 +68,15 @@ def clean_option_data(dataframe):
     for date in data['callExpDateMap'].keys():
         for strike_price in data['callExpDateMap'][date].keys():
             available_options.append((date,strike_price))
+
+    #Must keep all timestamps in milliseconds due to issue with fastparquet and pandas
     columns = ['date','timestamp', 'asset_type', 'symbol', 'expiration_date', 'option_type', 'strike_price', 'bid', 'ask',
                 'bid_size', 'ask_size', 'mark_price', 'last_price', 'volume', 'volatility', 'open_interest', 'delta',
                'gamma', 'theta', 'vega', 'rho']
-    data_types = {'timestamp': 'datetime64[s]', 'asset_type': object, 'symbol': object, 'expiration_date': 'datetime64[ns]',
-                  'option_type': object, 'strike_price': float64, 'bid': float64, 'ask': float64, 'bid_size': uint64,
-                  'ask_size': uint64, 'mark_price': float64, 'last_price': float64, 'volume': uint64, 'volatility': float64,
-                  'open_interest': uint64, 'delta': float64, 'gamma': float64, 'theta': float64, 'vega': float64, 'rho': float64}
+    data_types = {'timestamp': 'datetime64[ms]', 'asset_type': object, 'symbol': object, 'expiration_date': 'datetime64[ms]',
+                  'option_type': object, 'strike_price': float64, 'bid': float64, 'ask': float64, 'bid_size': int64,
+                  'ask_size': int64, 'mark_price': float64, 'last_price': float64, 'volume': int64, 'volatility': float64,
+                  'open_interest': int64, 'delta': float64, 'gamma': float64, 'theta': float64, 'vega': float64, 'rho': float64}
     today_timestamp = dt.datetime.now()
     cleaned_dataframe = pd.DataFrame(columns=columns)
     for i in range(len(available_options)):
@@ -104,5 +108,8 @@ def clean_option_data(dataframe):
     cleaned_dataframe['expiration_date'] = pd.to_datetime(cleaned_dataframe['expiration_date'],utc=True)
     cleaned_dataframe['expiration_date'] = pd.to_datetime(cleaned_dataframe['expiration_date'].dt.tz_localize(None))
     cleaned_dataframe = cleaned_dataframe.astype(data_types)
+
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
 
     return cleaned_dataframe

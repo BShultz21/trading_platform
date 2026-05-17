@@ -1,7 +1,6 @@
 from storage.parquet import parquet
 from processing.parser import parser
 
-
 def parse_bronze_dataframe(data_pull):
     dataframe = parquet.load_parquet_file('bronze', data_pull)
 
@@ -21,3 +20,4 @@ def load_to_silver_layer(dataframe):
 if __name__ == '__main__':
     df = parse_bronze_dataframe('options')
     load_to_silver_layer(df)
+
