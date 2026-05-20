@@ -2,6 +2,9 @@ from storage.parquet import parquet
 from processing.parser import parser
 
 def parse_bronze_dataframe(data_pull):
+    """
+    Takes data_pull (options, equities, 'historical_equities" and cleans a pandas dataframe to allow for loading to silver layer
+    """
     dataframe = parquet.load_parquet_file('bronze', data_pull)
 
     if data_pull == 'equity':
@@ -15,6 +18,9 @@ def parse_bronze_dataframe(data_pull):
         raise ValueError
 
 def load_to_silver_layer(dataframe):
+    """
+    Writes parquet file to silver layer
+    """
     parquet.write_parquet_file(dataframe, 'silver')
 
 if __name__ == '__main__':

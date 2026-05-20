@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime, timedelta
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from requests import HTTPError, post
 from auth import auth_server
 import threading
@@ -8,7 +8,6 @@ import time
 import base64
 import json
 import os
-from pathlib import Path
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -203,7 +202,3 @@ class SchwabAPICredentials(object):
             print("Refresh token is expired")
             self.get_schwab_tokens()
             return True
-
-if __name__ == '__main__':
-    Schwab = SchwabAPICredentials()
-    Schwab.token_handler()

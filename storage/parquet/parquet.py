@@ -16,6 +16,9 @@ def write_parquet_file(dataframe, medallion_level) -> None:
     pq.write_to_dataset(table, output_path, partition_cols=['asset_type', 'date'])
 
 def load_parquet_file(medallion_level, asset_type):
+    """
+    Takes medallion level, asset_type and loads the most recently modified parquet file
+    """
     file_dir = Path(__file__).resolve().parent.parent / f"{medallion_level}/asset_type={asset_type}/date={dt.date.today()}"
 
     if not file_dir.exists():
