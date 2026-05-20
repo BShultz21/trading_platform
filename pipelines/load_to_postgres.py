@@ -12,5 +12,6 @@ def create_db_connection():
     return create_engine(postgres_str)
 
 def load_sql_table(dataframe, table, db_connection):
+    dataframe = dataframe.drop(columns=['asset_type','date'])
     dataframe.to_sql(table, con=db_connection, if_exists="append")
     print("Data uploaded to SQL successfully")
