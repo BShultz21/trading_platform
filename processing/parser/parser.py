@@ -77,13 +77,12 @@ def clean_option_data(dataframe):
                   'option_type': object, 'strike_price': float64, 'bid': float64, 'ask': float64, 'bid_size': int64,
                   'ask_size': int64, 'mark_price': float64, 'last_price': float64, 'volume': int64, 'volatility': float64,
                   'open_interest': int64, 'delta': float64, 'gamma': float64, 'theta': float64, 'vega': float64, 'rho': float64}
-    today_timestamp = dt.datetime.now()
     cleaned_dataframe = pd.DataFrame(columns=columns)
     for i in range(len(available_options)):
         date = available_options[i][0]
         strike_price = available_options[i][1]
         cleaned_dataframe.loc[i, 'date'] = dt.date.today()
-        cleaned_dataframe.loc[i, 'timestamp'] = today_timestamp
+        cleaned_dataframe.loc[i, 'timestamp'] = data['callExpDateMap'][date][strike_price][0]['quoteTimeInLong']
         cleaned_dataframe.loc[i, 'asset_type'] = 'options'
         cleaned_dataframe.loc[i, 'symbol'] = symbol
         cleaned_dataframe.loc[i, 'expiration_date'] = data['callExpDateMap'][date][strike_price][0]['expirationDate']

@@ -1,6 +1,7 @@
 from ingestion.handlers import batch_handler
 from pipelines import bronze_to_silver, load_to_postgres
 from storage.parquet import parquet
+import pandas as pd
 
 if __name__ == '__main__':
     #batch_handler = batch_handler.BatchHandler()
