@@ -4,10 +4,10 @@ from storage.parquet import parquet
 import pandas as pd
 
 if __name__ == '__main__':
-    #batch_handler = batch_handler.BatchHandler()
-    #batch_handler.get_historical_equities_data('AAPL')
-    #batch_handler.get_equities_data(['AAPL', 'MSFT'])
-    #batch_handler.get_option_chains_data('AAPL')
+    batch_handler = batch_handler.BatchHandler()
+    batch_handler.get_historical_equities_data('AAPL')
+    batch_handler.get_equities_data(['AAPL', 'MSFT'])
+    batch_handler.get_option_chains_data('AAPL')
     db_conn = load_to_postgres.create_db_connection()
     asset_types = ['options', 'historical_equity', 'equity']
     for asset_type in asset_types:

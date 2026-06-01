@@ -64,10 +64,16 @@ def clean_option_data(dataframe):
     json_str = dataframe['raw_json'][0].decode('utf-8')
     data = json.loads(json_str)
 
-    available_options = []
-    for date in data['callExpDateMap'].keys():
-        for strike_price in data['callExpDateMap'][date].keys():
-            available_options.append((date,strike_price))
+    available_call_options = []
+    call_data = data['callExpDateMap']
+    available_put_options = []
+    put_data = data['putExpDateMap']
+    for date in call_data.keys():
+        for strike_price in call_data[date].keys():
+            available_call_options.append((date,strike_price))
+    for date in put_data.keys():
+        for strike_price in put_data[date].keys():
+            available_put_options.append((date,strike_price))
 
     #Must keep all timestamps in milliseconds due to issue with fastparquet and pandas
     columns = ['date','timestamp', 'asset_type', 'symbol', 'expiration_date', 'option_type', 'strike_price', 'bid', 'ask',
@@ -78,30 +84,55 @@ def clean_option_data(dataframe):
                   'ask_size': int64, 'mark_price': float64, 'last_price': float64, 'volume': int64, 'volatility': float64,
                   'open_interest': int64, 'delta': float64, 'gamma': float64, 'theta': float64, 'vega': float64, 'rho': float64}
     cleaned_dataframe = pd.DataFrame(columns=columns)
-    for i in range(len(available_options)):
-        date = available_options[i][0]
-        strike_price = available_options[i][1]
+    for i in range(len(available_call_options)):
+        date = available_call_options[i][0]
+        strike_price = available_call_options[i][1]
         cleaned_dataframe.loc[i, 'date'] = dt.date.today()
-        cleaned_dataframe.loc[i, 'timestamp'] = data['callExpDateMap'][date][strike_price][0]['quoteTimeInLong']
+        cleaned_dataframe.loc[i, 'timestamp'] = call_data[date][strike_price][0]['quoteTimeInLong']
         cleaned_dataframe.loc[i, 'asset_type'] = 'options'
         cleaned_dataframe.loc[i, 'symbol'] = symbol
-        cleaned_dataframe.loc[i, 'expiration_date'] = data['callExpDateMap'][date][strike_price][0]['expirationDate']
-        cleaned_dataframe.loc[i, 'option_type'] = data['callExpDateMap'][date][strike_price][0]['putCall']
-        cleaned_dataframe.loc[i, 'strike_price'] = data['callExpDateMap'][date][strike_price][0]['strikePrice']
-        cleaned_dataframe.loc[i, 'bid'] = data['callExpDateMap'][date][strike_price][0]['bid']
-        cleaned_dataframe.loc[i, 'ask'] = data['callExpDateMap'][date][strike_price][0]['ask']
-        cleaned_dataframe.loc[i, 'bid_size'] = data['callExpDateMap'][date][strike_price][0]['bidSize']
-        cleaned_dataframe.loc[i, 'ask_size'] = data['callExpDateMap'][date][strike_price][0]['askSize']
-        cleaned_dataframe.loc[i, 'mark_price'] = data['callExpDateMap'][date][strike_price][0]['mark']
-        cleaned_dataframe.loc[i, 'last_price'] = data['callExpDateMap'][date][strike_price][0]['last']
-        cleaned_dataframe.loc[i, 'volume'] = data['callExpDateMap'][date][strike_price][0]['totalVolume']
-        cleaned_dataframe.loc[i, 'volatility'] = data['callExpDateMap'][date][strike_price][0]['volatility']
-        cleaned_dataframe.loc[i, 'open_interest'] = data['callExpDateMap'][date][strike_price][0]['openInterest']
-        cleaned_dataframe.loc[i, 'delta'] = data['callExpDateMap'][date][strike_price][0]['delta']
-        cleaned_dataframe.loc[i, 'gamma'] = data['callExpDateMap'][date][strike_price][0]['gamma']
-        cleaned_dataframe.loc[i, 'theta'] = data['callExpDateMap'][date][strike_price][0]['theta']
-        cleaned_dataframe.loc[i, 'vega'] = data['callExpDateMap'][date][strike_price][0]['vega']
-        cleaned_dataframe.loc[i, 'rho'] = data['callExpDateMap'][date][strike_price][0]['rho']
+        cleaned_dataframe.loc[i, 'expiration_date'] = call_data[date][strike_price][0]['expirationDate']
+        cleaned_dataframe.loc[i, 'option_type'] = call_data[date][strike_price][0]['putCall']
+        cleaned_dataframe.loc[i, 'strike_price'] = call_data[date][strike_price][0]['strikePrice']
+        cleaned_dataframe.loc[i, 'bid'] = call_data[date][strike_price][0]['bid']
+        cleaned_dataframe.loc[i, 'ask'] = call_data[date][strike_price][0]['ask']
+        cleaned_dataframe.loc[i, 'bid_size'] = call_data[date][strike_price][0]['bidSize']
+        cleaned_dataframe.loc[i, 'ask_size'] = call_data[date][strike_price][0]['askSize']
+        cleaned_dataframe.loc[i, 'mark_price'] = call_data[date][strike_price][0]['mark']
+        cleaned_dataframe.loc[i, 'last_price'] = call_data[date][strike_price][0]['last']
+        cleaned_dataframe.loc[i, 'volume'] = call_data[date][strike_price][0]['totalVolume']
+        cleaned_dataframe.loc[i, 'volatility'] = call_data[date][strike_price][0]['volatility']
+        cleaned_dataframe.loc[i, 'open_interest'] = call_data[date][strike_price][0]['openInterest']
+        cleaned_dataframe.loc[i, 'delta'] = call_data[date][strike_price][0]['delta']
+        cleaned_dataframe.loc[i, 'gamma'] = call_data[date][strike_price][0]['gamma']
+        cleaned_dataframe.loc[i, 'theta'] =call_data[date][strike_price][0]['theta']
+        cleaned_dataframe.loc[i, 'vega'] = call_data[date][strike_price][0]['vega']
+        cleaned_dataframe.loc[i, 'rho'] = call_data[date][strike_price][0]['rho']
+
+    for i in range(len(available_put_options)):
+        date = available_put_options[i][0]
+        strike_price = available_put_options[i][1]
+        cleaned_dataframe.loc[i  + len(available_call_options), 'date'] = dt.date.today()
+        cleaned_dataframe.loc[i  + len(available_call_options), 'timestamp'] = put_data[date][strike_price][0]['quoteTimeInLong']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'asset_type'] = 'options'
+        cleaned_dataframe.loc[i  + len(available_call_options),'symbol'] = symbol
+        cleaned_dataframe.loc[i  + len(available_call_options), 'expiration_date'] = put_data[date][strike_price][0]['expirationDate']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'option_type'] = put_data[date][strike_price][0]['putCall']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'strike_price'] = put_data[date][strike_price][0]['strikePrice']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'bid'] = put_data[date][strike_price][0]['bid']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'ask'] = put_data[date][strike_price][0]['ask']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'bid_size'] = put_data[date][strike_price][0]['bidSize']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'ask_size'] = put_data[date][strike_price][0]['askSize']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'mark_price'] = put_data[date][strike_price][0]['mark']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'last_price'] =put_data[date][strike_price][0]['last']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'volume'] = put_data[date][strike_price][0]['totalVolume']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'volatility'] = put_data[date][strike_price][0]['volatility']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'open_interest'] = put_data[date][strike_price][0]['openInterest']
+        cleaned_dataframe.loc[i  + len(available_call_options),'delta'] =put_data[date][strike_price][0]['delta']
+        cleaned_dataframe.loc[i  + len(available_call_options),'gamma'] = put_data[date][strike_price][0]['gamma']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'theta'] = put_data[date][strike_price][0]['theta']
+        cleaned_dataframe.loc[i  + len(available_call_options), 'vega'] =put_data[date][strike_price][0]['vega']
+        cleaned_dataframe.loc[i  + len(available_call_options),'rho'] = put_data[date][strike_price][0]['rho']
 
     cleaned_dataframe['timestamp'] = pd.to_datetime(cleaned_dataframe['timestamp'], unit='ms')
     cleaned_dataframe['expiration_date'] = pd.to_datetime(cleaned_dataframe['expiration_date'],utc=True)
