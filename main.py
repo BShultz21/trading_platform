@@ -1,5 +1,5 @@
 from ingestion.handlers import batch_handler
-from pipelines import bronze_to_silver, load_to_postgres
+from pipelines import bronze_to_silver, load_to_postgres, silver_to_gold
 from storage.parquet import parquet
 import pandas as pd
 
@@ -15,4 +15,4 @@ if __name__ == '__main__':
         bronze_to_silver.load_to_silver_layer(bronze_df)
         silver_df = parquet.load_parquet_file("silver", asset_type)
         load_to_postgres.load_sql_table(silver_df, asset_type, db_conn)
-
+    silver_to_gold.refresh_mat_views(db_conn)
