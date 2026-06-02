@@ -20,7 +20,7 @@ The project demonstrates modern data engineering concepts including:
 
 **Batch Streaming**
 
-![!plot](images\trading_platform batch streaming data architecture.png)
+![plot](images\trading_platform batch streaming data architecture.png)
 
 ## Technology Stack
 
