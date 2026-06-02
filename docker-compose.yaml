@@ -1,6 +1,7 @@
 name: trading_platform
 
 services:
+
   db:
     container_name: postgres
     image: postgres
@@ -17,14 +18,32 @@ services:
       - db
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bank"]
       interval: 30s
       timeout: 10s
       retries: 5
+
+  pipeline:
+    build: .
+
+    depends_on:
+      - db
+
+    environment:
+      DB_HOST: db
+      DB_NAME: bank
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+    volumes:
+      - ./data:/app/data
+
+    networks:
+      - db
+
 networks:
   db:
     driver: bridge
 
 volumes:
   db:
-

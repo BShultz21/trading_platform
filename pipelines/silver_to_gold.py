@@ -1,4 +1,5 @@
 from sqlalchemy import text
+import psycopg2
 
 def refresh_mat_views(db_conn):
     with db_conn.connect() as connection:

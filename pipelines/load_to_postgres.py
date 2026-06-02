@@ -9,11 +9,11 @@ def create_db_connection():
     """
     username = 'postgres'
     password = 'postgres'
-    ipaddress = 'localhost'
-    port = 5332
+    host= 'db'
+    port = 5432
     dbname = 'bank'
 
-    postgres_str = f'postgresql://{username}:{password}@{ipaddress}:{port}/{dbname}'
+    postgres_str = f'postgresql://{username}:{password}@{host}:{port}/{dbname}'
     return create_engine(postgres_str)
 
 def load_sql_table(dataframe, table, db_connection):
