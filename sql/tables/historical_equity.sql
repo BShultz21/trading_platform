@@ -1,9 +1,3 @@
--- public.historical_equity definition
-
--- Drop table
-
--- DROP TABLE public.historical_equity;
-
 CREATE TABLE public.historical_equity (
 	"index" int8 NULL,
 	"timestamp" timestamp NULL,

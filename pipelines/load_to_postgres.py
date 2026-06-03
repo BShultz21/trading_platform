@@ -11,7 +11,7 @@ def create_db_connection():
     password = 'postgres'
     host= 'db'
     port = 5432
-    dbname = 'bank'
+    dbname = 'marketdata'
 
     postgres_str = f'postgresql://{username}:{password}@{host}:{port}/{dbname}'
     return create_engine(postgres_str)

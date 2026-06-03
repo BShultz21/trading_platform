@@ -1,9 +1,3 @@
--- public."options" definition
-
--- Drop table
-
--- DROP TABLE public."options";
-
 CREATE TABLE public."options" (
 	"index" int8 NULL,
 	"timestamp" timestamp NULL,

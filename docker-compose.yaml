@@ -9,21 +9,23 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       PGDATA: /data/postgres
-      POSTGRES_DB: bank
+      POSTGRES_DB: marketdata
     volumes:
       - db:/data/postgres
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5332:5432"
     networks:
       - db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d bank"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d marketdata"]
       interval: 30s
       timeout: 10s
       retries: 5
 
   pipeline:
+    container_name: pipeline
     build: .
 
     depends_on:
@@ -31,7 +33,7 @@ services:
 
     environment:
       DB_HOST: db
-      DB_NAME: bank
+      DB_NAME: marketdata
       DB_USER: postgres
       DB_PASSWORD: postgres
 
